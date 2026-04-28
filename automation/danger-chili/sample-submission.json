@@ -1,0 +1,20 @@
+{
+  "contest_year": "2026",
+  "display_name": "Example Chef",
+  "hacker_handle": "@example",
+  "credit_url": "https://github.com/example",
+  "recipe_name": "Packet Sniffer Smoked Chili",
+  "recipe_story": "This entry started as a tailgate chili and picked up a smoky incident-response personality over two cook-offs.",
+  "chili_style": "Smoked beef and bean chili",
+  "heat_level": "3 of 5",
+  "servings": "8 bowls",
+  "prep_time": "30 minutes",
+  "cook_time": "4 hours",
+  "ingredients": "2 lb smoked chuck roast, cubed\n2 cans fire-roasted tomatoes\n2 cans pinto beans, drained\n1 large onion, diced\n3 cloves garlic, minced\n3 tbsp chili powder\n1 tbsp cumin\n1 tsp smoked paprika\nSalt and black pepper to taste",
+  "instructions": "Smoke the chuck roast until it reaches 165 F, then cube it.\nSaute the onion and garlic until soft.\nCombine everything in a Dutch oven or slow cooker.\nSimmer until the beef is tender and the chili thickens.\nTaste, tune the seasoning, and serve hot.",
+  "hack_story": "The trick is treating the meat like packet capture: collect smoke early, inspect the texture often, and only merge it into the pot when the bark has useful signal.",
+  "serving_notes": "Serve with sharp cheddar, pickled jalapenos, and corn chips.",
+  "allergens": "Contains dairy if served with cheese.",
+  "consent_license": true,
+  "consent_public": true
+}

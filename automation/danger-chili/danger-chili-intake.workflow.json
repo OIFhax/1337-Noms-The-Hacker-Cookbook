@@ -1,0 +1,348 @@
+{
+  "name": "Danger-Chili Intake to GitHub PR",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Danger-Chili: Hack My Chili Recipe Intake",
+        "formDescription": "Submit a chili recipe for cookbook review. Only public recipe text and credit details should be entered here.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Contest Year",
+              "fieldName": "contest_year",
+              "fieldType": "number",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Public Display Name",
+              "fieldName": "display_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Hacker Handle",
+              "fieldName": "hacker_handle"
+            },
+            {
+              "fieldLabel": "Public Credit URL",
+              "fieldName": "credit_url"
+            },
+            {
+              "fieldLabel": "Recipe Name",
+              "fieldName": "recipe_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Recipe Story",
+              "fieldName": "recipe_story",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Chili Style",
+              "fieldName": "chili_style"
+            },
+            {
+              "fieldLabel": "Heat Level",
+              "fieldName": "heat_level"
+            },
+            {
+              "fieldLabel": "Servings",
+              "fieldName": "servings"
+            },
+            {
+              "fieldLabel": "Prep Time",
+              "fieldName": "prep_time"
+            },
+            {
+              "fieldLabel": "Cook Time",
+              "fieldName": "cook_time"
+            },
+            {
+              "fieldLabel": "Ingredients",
+              "fieldName": "ingredients",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Instructions",
+              "fieldName": "instructions",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "How I Hack My Chili",
+              "fieldName": "hack_story",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Serving Notes",
+              "fieldName": "serving_notes",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Allergens or Dietary Notes",
+              "fieldName": "allergens",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "I have the right to share this recipe under the cookbook license",
+              "fieldName": "consent_license",
+              "fieldType": "checkbox",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "I understand the chosen credit name, story, and recipe text will be public",
+              "fieldName": "consent_public",
+              "fieldType": "checkbox",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "ignoreBots": true,
+          "buttonLabel": "Submit Recipe"
+        }
+      },
+      "id": "form-trigger",
+      "name": "Chili Entry Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -680,
+        0
+      ],
+      "webhookId": "replace-after-import"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "'use strict';\n\nconst DEFAULT_CONFIG = {\n  sourceOwner: 'OIFhax',\n  sourceRepo: '1337-Noms-The-Hacker-Cookbook',\n  targetOwner: 'pale-shadow',\n  targetRepo: '1337-Noms-The-Hacker-Cookbook',\n  baseBranch: 'main',\n  categoryDir: 'ENTREES',\n  branchPrefix: 'danger-chili'\n};\n\nconst FIELD_ALIASES = {\n  contestYear: ['contest_year', 'contestYear', 'year'],\n  displayName: ['display_name', 'displayName', 'name', 'chef_name', 'chefName'],\n  hackerHandle: ['hacker_handle', 'hackerHandle', 'handle', 'credit_handle', 'creditHandle'],\n  creditUrl: ['credit_url', 'creditUrl', 'profile_url', 'profileUrl'],\n  recipeName: ['recipe_name', 'recipeName', 'chili_name', 'chiliName', 'dish_name', 'dishName'],\n  recipeStory: ['recipe_story', 'recipeStory', 'story', 'description'],\n  chiliStyle: ['chili_style', 'chiliStyle', 'style'],\n  heatLevel: ['heat_level', 'heatLevel', 'heat'],\n  servings: ['servings', 'yield', 'serves'],\n  prepTime: ['prep_time', 'prepTime'],\n  cookTime: ['cook_time', 'cookTime'],\n  ingredients: ['ingredients'],\n  instructions: ['instructions', 'steps'],\n  hackStory: [\n    'hack_story',\n    'hackStory',\n    'how_hack',\n    'howHack',\n    'hack_my_chili',\n    'hackMyChili',\n    'how_hacked',\n    'howHacked',\n    'hacked_my_chili',\n    'hackedMyChili'\n  ],\n  servingNotes: ['serving_notes', 'servingNotes', 'pairing', 'pairings', 'garnish'],\n  allergens: ['allergens', 'dietary_notes', 'dietaryNotes'],\n  consentLicense: ['consent_license', 'consentLicense', 'license_consent', 'licenseConsent'],\n  consentPublic: ['consent_public', 'consentPublic', 'public_consent', 'publicConsent']\n};\n\nfunction readField(source, key, fallback = '') {\n  for (const name of FIELD_ALIASES[key] || [key]) {\n    if (Object.prototype.hasOwnProperty.call(source, name) && source[name] !== undefined && source[name] !== null) {\n      return source[name];\n    }\n  }\n\n  return fallback;\n}\n\nfunction cleanText(value) {\n  return String(value === undefined || value === null ? '' : value)\n    .replace(/\\r\\n?/g, '\\n')\n    .split('\\n')\n    .map((line) => line.trimEnd())\n    .join('\\n')\n    .trim();\n}\n\nfunction splitLines(value) {\n  if (Array.isArray(value)) {\n    return value.flatMap(splitLines);\n  }\n\n  return cleanText(value)\n    .split('\\n')\n    .map((line) => line.replace(/^\\s*(?:[-*+]|\\d+[.)])\\s+/, '').trim())\n    .filter(Boolean);\n}\n\nfunction isAffirmative(value) {\n  if (typeof value === 'boolean') {\n    return value;\n  }\n\n  if (Array.isArray(value)) {\n    return value.some(isAffirmative);\n  }\n\n  return ['1', 'true', 'yes', 'y', 'checked', 'agree', 'agreed', 'on'].includes(\n    String(value === undefined || value === null ? '' : value).trim().toLowerCase()\n  );\n}\n\nfunction slugify(value, fallback = 'untitled') {\n  const slug = cleanText(value)\n    .toLowerCase()\n    .replace(/@/g, '')\n    .replace(/&/g, ' and ')\n    .replace(/[^a-z0-9]+/g, '_')\n    .replace(/^_+|_+$/g, '')\n    .replace(/_{2,}/g, '_')\n    .slice(0, 72);\n\n  return slug || fallback;\n}\n\nfunction normalizeHandle(value) {\n  const cleaned = cleanText(value);\n\n  if (!cleaned) {\n    return '';\n  }\n\n  return cleaned.startsWith('@') ? cleaned : `@${cleaned}`;\n}\n\nfunction safeUrl(value) {\n  const cleaned = cleanText(value);\n\n  if (!cleaned) {\n    return '';\n  }\n\n  try {\n    const url = new URL(cleaned);\n    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';\n  } catch (_error) {\n    return '';\n  }\n}\n\nfunction bulletList(items) {\n  return items.map((item) => `- ${item}`).join('\\n');\n}\n\nfunction orderedList(items) {\n  return items.map((item, index) => `${index + 1}. ${item}`).join('\\n');\n}\n\nfunction addLabeledValue(lines, label, value) {\n  const cleaned = cleanText(value);\n\n  if (cleaned) {\n    lines.push(`- ${label}: ${cleaned}`);\n  }\n}\n\nfunction encodeBase64(value) {\n  if (typeof Buffer !== 'undefined') {\n    return Buffer.from(value, 'utf8').toString('base64');\n  }\n\n  return btoa(unescape(encodeURIComponent(value)));\n}\n\nfunction currentYear(now) {\n  return String((now || new Date()).getFullYear());\n}\n\nfunction buildRecipe(source, config = {}, options = {}) {\n  const mergedConfig = Object.assign({}, DEFAULT_CONFIG, config);\n  const now = options.now || new Date();\n  const contestYear = cleanText(readField(source, 'contestYear', currentYear(now)));\n  const displayName = cleanText(readField(source, 'displayName'));\n  const hackerHandle = normalizeHandle(readField(source, 'hackerHandle'));\n  const creditUrl = safeUrl(readField(source, 'creditUrl'));\n  const recipeName = cleanText(readField(source, 'recipeName'));\n  const recipeStory = cleanText(readField(source, 'recipeStory'));\n  const chiliStyle = cleanText(readField(source, 'chiliStyle'));\n  const heatLevel = cleanText(readField(source, 'heatLevel'));\n  const servings = cleanText(readField(source, 'servings'));\n  const prepTime = cleanText(readField(source, 'prepTime'));\n  const cookTime = cleanText(readField(source, 'cookTime'));\n  const ingredients = splitLines(readField(source, 'ingredients'));\n  const instructions = splitLines(readField(source, 'instructions'));\n  const hackStory = cleanText(readField(source, 'hackStory'));\n  const servingNotes = cleanText(readField(source, 'servingNotes'));\n  const allergens = cleanText(readField(source, 'allergens'));\n  const consentLicense = isAffirmative(readField(source, 'consentLicense'));\n  const consentPublic = isAffirmative(readField(source, 'consentPublic'));\n  const creditName = hackerHandle || displayName || 'Anonymous';\n  const validationErrors = [];\n\n  if (!recipeName) {\n    validationErrors.push('Recipe name is required.');\n  }\n\n  if (!displayName && !hackerHandle) {\n    validationErrors.push('Display name or hacker handle is required.');\n  }\n\n  if (!ingredients.length) {\n    validationErrors.push('At least one ingredient is required.');\n  }\n\n  if (!instructions.length) {\n    validationErrors.push('At least one instruction is required.');\n  }\n\n  if (!hackStory) {\n    validationErrors.push('How I Hack My Chili is required.');\n  }\n\n  if (!consentLicense) {\n    validationErrors.push('License consent is required.');\n  }\n\n  if (!consentPublic) {\n    validationErrors.push('Public sharing consent is required.');\n  }\n\n  const title = recipeName || 'Untitled Chili';\n  const recipeSlug = slugify(title, 'chili');\n  const creditSlug = slugify(creditName, 'anonymous');\n  const uniqueId = slugify(options.executionId || options.submissionId || String(now.getTime()), 'submission');\n  const categoryDir = cleanText(mergedConfig.categoryDir || DEFAULT_CONFIG.categoryDir).toUpperCase();\n  const filePath = `${categoryDir}/hack_my_chili_${contestYear}_${creditSlug}_${recipeSlug}.md`;\n  const branchName = `${mergedConfig.branchPrefix}/${contestYear}/${creditSlug}_${recipeSlug}_${uniqueId}`;\n  const headingCredit = creditName === 'Anonymous' ? '' : `${creditName}'s `;\n  const lines = [`# ${headingCredit}${title}`, ''];\n\n  const summary = [];\n  addLabeledValue(summary, 'Contest', `Hack My Chili ${contestYear}`);\n  addLabeledValue(summary, 'Credit', creditUrl ? `[${creditName}](${creditUrl})` : creditName);\n  addLabeledValue(summary, 'Style', chiliStyle);\n  addLabeledValue(summary, 'Heat', heatLevel);\n  addLabeledValue(summary, 'Yield', servings);\n  addLabeledValue(summary, 'Prep time', prepTime);\n  addLabeledValue(summary, 'Cook time', cookTime);\n\n  lines.push(...summary, '');\n\n  if (recipeStory) {\n    lines.push('## Story', '', recipeStory, '');\n  }\n\n  lines.push('## Ingredients', '', bulletList(ingredients), '', '## Instructions', '', orderedList(instructions), '', '## How I Hack My Chili', '', hackStory, '');\n\n  if (servingNotes) {\n    lines.push('## Serving Notes', '', servingNotes, '');\n  }\n\n  if (allergens) {\n    lines.push('## Dietary Notes', '', allergens, '');\n  }\n\n  const markdown = `${lines.join('\\n').replace(/\\n{3,}/g, '\\n\\n').trim()}\\n`;\n  const prTitle = `Add Hack My Chili ${contestYear}: ${title}`;\n  const commitMessage = `Add Hack My Chili recipe: ${title}`;\n  const prBody = [\n    `Adds ${creditName}'s Hack My Chili ${contestYear} entry.`,\n    '',\n    `Generated recipe file: \\`${filePath}\\``,\n    '',\n    'Submission notes:',\n    `- Style: ${chiliStyle || 'not provided'}`,\n    `- Heat: ${heatLevel || 'not provided'}`,\n    '- License/public-sharing consent was captured by the intake form.',\n    '',\n    'Maintainer checklist:',\n    '- [ ] Review formatting and recipe clarity.',\n    '- [ ] Confirm the public credit line is acceptable.',\n    '- [ ] Add or adjust credits if needed.'\n  ].join('\\n');\n\n  return {\n    validationErrors,\n    markdown,\n    contentBase64: encodeBase64(markdown),\n    filePath,\n    branchName,\n    commitMessage,\n    prTitle,\n    prBody,\n    github: {\n      sourceOwner: mergedConfig.sourceOwner,\n      sourceRepo: mergedConfig.sourceRepo,\n      targetOwner: mergedConfig.targetOwner,\n      targetRepo: mergedConfig.targetRepo,\n      baseBranch: mergedConfig.baseBranch\n    },\n    githubFileBody: {\n      message: commitMessage,\n      content: encodeBase64(markdown),\n      branch: branchName\n    },\n    pullRequestBody: {\n      title: prTitle,\n      head: mergedConfig.sourceOwner === mergedConfig.targetOwner\n        ? branchName\n        : `${mergedConfig.sourceOwner}:${branchName}`,\n      base: mergedConfig.baseBranch,\n      body: prBody,\n      maintainer_can_modify: true,\n      draft: false\n    },\n    publicSummary: {\n      contestYear,\n      creditName,\n      recipeName: title,\n      chiliStyle,\n      heatLevel,\n      filePath\n    }\n  };\n}\n\nif (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {\n  const fs = require('fs');\n  const inputPath = process.argv[2];\n\n  if (!inputPath) {\n    console.error('Usage: node recipe-builder.js sample-submission.json');\n    process.exit(1);\n  }\n\n  const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));\n  const result = buildRecipe(input, {}, {\n    now: new Date('2026-04-28T00:00:00Z'),\n    executionId: 'local_test'\n  });\n\n  console.log(JSON.stringify(result, null, 2));\n}\n\nif (typeof module !== 'undefined' && module.exports) {\n  module.exports = {\n    DEFAULT_CONFIG,\n    buildRecipe,\n    slugify,\n    splitLines\n  };\n}\n\n\nconst result = buildRecipe($input.first().json, DEFAULT_CONFIG, {\n  executionId: $execution.id\n});\n\nif (result.validationErrors.length) {\n  throw new Error(result.validationErrors.join(' '));\n}\n\nreturn [{ json: result }];\n"
+      },
+      "id": "build-recipe",
+      "name": "Build Recipe Markdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/git/ref/heads/{{ $('Build Recipe Markdown').item.json.github.baseBranch }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-chili"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-base-ref",
+      "name": "Get Base Ref",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/git/refs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-chili"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"ref\": \"refs/heads/\" + $('Build Recipe Markdown').item.json.branchName,\n  \"sha\": $json.object.sha\n}"
+      },
+      "id": "create-branch",
+      "name": "Create Branch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').item.json.filePath }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-chili"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Build Recipe Markdown').item.json.githubFileBody }}"
+      },
+      "id": "create-recipe-file",
+      "name": "Create Recipe File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.targetOwner }}/{{ $('Build Recipe Markdown').item.json.github.targetRepo }}/pulls",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-chili"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Build Recipe Markdown').item.json.pullRequestBody }}"
+      },
+      "id": "create-pr",
+      "name": "Create Pull Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Chili Entry Form": {
+      "main": [
+        [
+          {
+            "node": "Build Recipe Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Recipe Markdown": {
+      "main": [
+        [
+          {
+            "node": "Get Base Ref",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Base Ref": {
+      "main": [
+        [
+          {
+            "node": "Create Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Branch": {
+      "main": [
+        [
+          {
+            "node": "Create Recipe File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Recipe File": {
+      "main": [
+        [
+          {
+            "node": "Create Pull Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}
