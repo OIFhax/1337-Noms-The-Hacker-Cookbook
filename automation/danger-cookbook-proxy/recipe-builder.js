@@ -6,38 +6,37 @@ const DEFAULT_CONFIG = {
   targetOwner: 'pale-shadow',
   targetRepo: '1337-Noms-The-Hacker-Cookbook',
   baseBranch: 'main',
-  categoryDir: 'ENTREES',
-  branchPrefix: 'danger-chili'
+  branchPrefix: 'danger-cookbook-proxy',
+  allowedCategories: [
+    'APPETIZERS',
+    'BREAKFAST',
+    'COOKWARE',
+    'DESSERTS',
+    'DRINKS',
+    'ENTREES',
+    'SAUCES',
+    'SIDES',
+    'SNACKS'
+  ]
 };
 
 const FIELD_ALIASES = {
-  contestYear: ['contest_year', 'contestYear', 'Contest Year', 'year'],
+  category: ['category', 'categoryDir', 'category_dir', 'Recipe Category', 'Cookbook Category', 'section'],
   displayName: ['display_name', 'displayName', 'Public Display Name', 'name', 'chef_name', 'chefName'],
   hackerHandle: ['hacker_handle', 'hackerHandle', 'Hacker Handle', 'handle', 'credit_handle', 'creditHandle'],
   creditUrl: ['credit_url', 'creditUrl', 'Public Credit URL', 'profile_url', 'profileUrl'],
-  recipeName: ['recipe_name', 'recipeName', 'Recipe Name', 'chili_name', 'chiliName', 'dish_name', 'dishName'],
-  recipeStory: ['recipe_story', 'recipeStory', 'Recipe Story', 'story', 'description'],
-  chiliStyle: ['chili_style', 'chiliStyle', 'Chili Style', 'style'],
-  heatLevel: ['heat_level', 'heatLevel', 'Heat Level', 'heat'],
-  servings: ['servings', 'Servings', 'yield', 'serves'],
+  recipeName: ['recipe_name', 'recipeName', 'Recipe Name', 'dish_name', 'dishName', 'title'],
+  recipeDescription: ['recipe_description', 'recipeDescription', 'Recipe Description', 'Recipe Story', 'story', 'description'],
+  servings: ['servings', 'Servings', 'yield', 'Yield', 'serves'],
   prepTime: ['prep_time', 'prepTime', 'Prep Time'],
   cookTime: ['cook_time', 'cookTime', 'Cook Time'],
+  difficulty: ['difficulty', 'Difficulty'],
   ingredients: ['ingredients', 'Ingredients'],
+  optionalIngredients: ['optional_ingredients', 'optionalIngredients', 'Optional Ingredients', 'optional'],
   instructions: ['instructions', 'Instructions', 'steps'],
-  hackStory: [
-    'hack_story',
-    'hackStory',
-    'How I Hack My Chili',
-    'how_hack',
-    'howHack',
-    'hack_my_chili',
-    'hackMyChili',
-    'how_hacked',
-    'howHacked',
-    'hacked_my_chili',
-    'hackedMyChili'
-  ],
-  servingNotes: ['serving_notes', 'servingNotes', 'Serving Notes', 'pairing', 'pairings', 'garnish'],
+  notes: ['notes', 'Notes', 'serving_notes', 'servingNotes', 'Serving Notes', 'pairing', 'pairings', 'garnish'],
+  hardware: ['hardware', 'Hardware', 'equipment', 'Equipment', 'cookware'],
+  tags: ['tags', 'Tags'],
   allergens: ['allergens', 'Allergens or Dietary Notes', 'dietary_notes', 'dietaryNotes'],
   consentLicense: [
     'consent_license',
@@ -69,6 +68,50 @@ const FORM_PAYLOAD_KEYS = [
 
 function isPlainObject(value) {
   return Boolean(value) && typeof value === 'object' && !Array.isArray(value);
+}
+
+function cleanText(value) {
+  return String(value === undefined || value === null ? '' : value)
+    .replace(/\r\n?/g, '\n')
+    .split('\n')
+    .map((line) => line.trimEnd())
+    .join('\n')
+    .trim();
+}
+
+function cleanInlineText(value) {
+  return cleanText(value).replace(/\s+/g, ' ');
+}
+
+function isMarkdownListLine(line) {
+  return /^\s*(?:[-*+]|\d+[.)])\s+/.test(line);
+}
+
+function isBlankLine(line) {
+  return /^\s*$/.test(line);
+}
+
+function formatMarkdownBlock(value) {
+  const lines = cleanText(value).split('\n');
+  const formatted = [];
+
+  for (const line of lines) {
+    const previous = formatted[formatted.length - 1];
+    const startsList = isMarkdownListLine(line);
+    const previousIsList = previous !== undefined && isMarkdownListLine(previous);
+
+    if (startsList && previous !== undefined && !isBlankLine(previous) && !previousIsList) {
+      formatted.push('');
+    }
+
+    if (!startsList && !isBlankLine(line) && previousIsList) {
+      formatted.push('');
+    }
+
+    formatted.push(line);
+  }
+
+  return formatted.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function normalizedKey(value) {
@@ -125,15 +168,6 @@ function readField(source, key, fallback = '') {
   return value === undefined ? fallback : value;
 }
 
-function cleanText(value) {
-  return String(value === undefined || value === null ? '' : value)
-    .replace(/\r\n?/g, '\n')
-    .split('\n')
-    .map((line) => line.trimEnd())
-    .join('\n')
-    .trim();
-}
-
 function splitLines(value) {
   if (Array.isArray(value)) {
     return value.flatMap(splitLines);
@@ -142,6 +176,17 @@ function splitLines(value) {
   return cleanText(value)
     .split('\n')
     .map((line) => line.replace(/^\s*(?:[-*+]|\d+[.)])\s+/, '').trim())
+    .filter(Boolean);
+}
+
+function splitDelimited(value) {
+  if (Array.isArray(value)) {
+    return value.flatMap(splitDelimited);
+  }
+
+  return cleanText(value)
+    .split(/[\n,]+/)
+    .map((item) => item.trim())
     .filter(Boolean);
 }
 
@@ -179,7 +224,7 @@ function slugify(value, fallback = 'untitled') {
 }
 
 function normalizeHandle(value) {
-  const cleaned = cleanText(value);
+  const cleaned = cleanInlineText(value);
 
   if (!cleaned) {
     return '';
@@ -189,7 +234,7 @@ function normalizeHandle(value) {
 }
 
 function safeUrl(value) {
-  const cleaned = cleanText(value);
+  const cleaned = cleanInlineText(value);
 
   if (!cleaned) {
     return '';
@@ -203,6 +248,17 @@ function safeUrl(value) {
   }
 }
 
+function normalizeCategory(value, allowedCategories = DEFAULT_CONFIG.allowedCategories) {
+  const cleaned = cleanInlineText(value);
+  const normalized = normalizedKey(cleaned);
+
+  if (!normalized) {
+    return '';
+  }
+
+  return allowedCategories.find((category) => normalizedKey(category) === normalized) || '';
+}
+
 function bulletList(items) {
   return items.map((item) => `- ${item}`).join('\n');
 }
@@ -212,46 +268,11 @@ function orderedList(items) {
 }
 
 function addLabeledValue(lines, label, value) {
-  const cleaned = cleanText(value);
+  const cleaned = cleanInlineText(value);
 
   if (cleaned) {
     lines.push(`- ${label}: ${cleaned}`);
   }
-}
-
-function cleanInlineText(value) {
-  return cleanText(value).replace(/\s+/g, ' ');
-}
-
-function isMarkdownListLine(line) {
-  return /^\s*(?:[-*+]|\d+[.)])\s+/.test(line);
-}
-
-function isBlankLine(line) {
-  return /^\s*$/.test(line);
-}
-
-function formatMarkdownBlock(value) {
-  const lines = cleanText(value).split('\n');
-  const formatted = [];
-
-  for (const line of lines) {
-    const previous = formatted[formatted.length - 1];
-    const startsList = isMarkdownListLine(line);
-    const previousIsList = previous !== undefined && isMarkdownListLine(previous);
-
-    if (startsList && previous !== undefined && !isBlankLine(previous) && !previousIsList) {
-      formatted.push('');
-    }
-
-    if (!startsList && !isBlankLine(line) && previousIsList) {
-      formatted.push('');
-    }
-
-    formatted.push(line);
-  }
-
-  return formatted.join('\n').replace(/\n{3,}/g, '\n\n').trim();
 }
 
 function escapeMarkdownLinkLabel(value) {
@@ -278,33 +299,36 @@ function encodeBase64(value) {
   return btoa(unescape(encodeURIComponent(value)));
 }
 
-function currentYear(now) {
-  return String((now || new Date()).getFullYear());
-}
-
 function buildRecipe(source, config = {}, options = {}) {
   const mergedConfig = Object.assign({}, DEFAULT_CONFIG, config);
+  const allowedCategories = mergedConfig.allowedCategories || DEFAULT_CONFIG.allowedCategories;
   const now = options.now || new Date();
-  const contestYear = cleanText(readField(source, 'contestYear', currentYear(now)));
-  const displayName = cleanText(readField(source, 'displayName'));
+  const categoryInput = readField(source, 'category');
+  const categoryDir = normalizeCategory(categoryInput, allowedCategories);
+  const displayName = cleanInlineText(readField(source, 'displayName'));
   const hackerHandle = normalizeHandle(readField(source, 'hackerHandle'));
   const creditUrl = safeUrl(readField(source, 'creditUrl'));
-  const recipeName = cleanText(readField(source, 'recipeName'));
-  const recipeStory = cleanText(readField(source, 'recipeStory'));
-  const chiliStyle = cleanText(readField(source, 'chiliStyle'));
-  const heatLevel = cleanText(readField(source, 'heatLevel'));
-  const servings = cleanText(readField(source, 'servings'));
-  const prepTime = cleanText(readField(source, 'prepTime'));
-  const cookTime = cleanText(readField(source, 'cookTime'));
+  const recipeName = cleanInlineText(readField(source, 'recipeName'));
+  const recipeDescription = cleanText(readField(source, 'recipeDescription'));
+  const servings = cleanInlineText(readField(source, 'servings'));
+  const prepTime = cleanInlineText(readField(source, 'prepTime'));
+  const cookTime = cleanInlineText(readField(source, 'cookTime'));
+  const difficulty = cleanInlineText(readField(source, 'difficulty'));
   const ingredients = splitLines(readField(source, 'ingredients'));
+  const optionalIngredients = splitLines(readField(source, 'optionalIngredients'));
   const instructions = splitLines(readField(source, 'instructions'));
-  const hackStory = cleanText(readField(source, 'hackStory'));
-  const servingNotes = cleanText(readField(source, 'servingNotes'));
+  const notes = cleanText(readField(source, 'notes'));
+  const hardware = splitDelimited(readField(source, 'hardware'));
+  const tags = splitDelimited(readField(source, 'tags'));
   const allergens = cleanText(readField(source, 'allergens'));
   const consentLicense = isAffirmative(readField(source, 'consentLicense'));
   const consentPublic = isAffirmative(readField(source, 'consentPublic'));
   const creditName = hackerHandle || displayName || 'Anonymous';
   const validationErrors = [];
+
+  if (!categoryDir) {
+    validationErrors.push(`Recipe category is required and must be one of: ${allowedCategories.join(', ')}.`);
+  }
 
   if (!recipeName) {
     validationErrors.push('Recipe name is required.');
@@ -322,10 +346,6 @@ function buildRecipe(source, config = {}, options = {}) {
     validationErrors.push('At least one instruction is required.');
   }
 
-  if (!hackStory) {
-    validationErrors.push('How I Hack My Chili is required.');
-  }
-
   if (!consentLicense) {
     validationErrors.push('License consent is required.');
   }
@@ -334,60 +354,75 @@ function buildRecipe(source, config = {}, options = {}) {
     validationErrors.push('Public sharing consent is required.');
   }
 
-  const title = recipeName || 'Untitled Chili';
-  const recipeSlug = slugify(title, 'chili');
+  const title = recipeName || 'Untitled Recipe';
+  const recipeSlug = slugify(title, 'recipe');
   const creditSlug = slugify(creditName, 'anonymous');
   const uniqueId = slugify(options.executionId || options.submissionId || String(now.getTime()), 'submission');
-  const categoryDir = cleanText(mergedConfig.categoryDir || DEFAULT_CONFIG.categoryDir).toUpperCase();
-  const filePath = `${categoryDir}/hack_my_chili_${contestYear}_${creditSlug}_${recipeSlug}.md`;
-  const branchName = `${mergedConfig.branchPrefix}/${contestYear}/${creditSlug}_${recipeSlug}_${uniqueId}`;
+  const filePath = `${categoryDir || 'ENTREES'}/${creditSlug}_${recipeSlug}.md`;
+  const branchName = `${mergedConfig.branchPrefix}/${categoryDir || 'recipe'}/${creditSlug}_${recipeSlug}_${uniqueId}`;
   const headingCredit = creditName === 'Anonymous' ? '' : `${creditName}'s `;
   const lines = [`# ${headingCredit}${title}`, ''];
 
+  if (recipeDescription) {
+    lines.push(formatMarkdownBlock(recipeDescription), '');
+  }
+
   const summary = [];
-  addLabeledValue(summary, 'Contest', `Hack My Chili ${contestYear}`);
+  addLabeledValue(summary, 'Category', categoryDir);
   addLabeledValue(summary, 'Credit', creditUrl ? `[${creditName}](${creditUrl})` : creditName);
-  addLabeledValue(summary, 'Style', chiliStyle);
-  addLabeledValue(summary, 'Heat', heatLevel);
   addLabeledValue(summary, 'Yield', servings);
   addLabeledValue(summary, 'Prep time', prepTime);
   addLabeledValue(summary, 'Cook time', cookTime);
+  addLabeledValue(summary, 'Difficulty', difficulty);
 
-  lines.push(...summary, '');
-
-  if (recipeStory) {
-    lines.push('## Story', '', formatMarkdownBlock(recipeStory), '');
+  if (summary.length) {
+    lines.push(...summary, '');
   }
 
-  lines.push('## Ingredients', '', bulletList(ingredients), '', '## Instructions', '', orderedList(instructions), '', '## How I Hack My Chili', '', formatMarkdownBlock(hackStory), '');
+  lines.push('## Ingredients', '', bulletList(ingredients), '');
 
-  if (servingNotes) {
-    lines.push('## Serving Notes', '', formatMarkdownBlock(servingNotes), '');
+  if (optionalIngredients.length) {
+    lines.push('## Optional', '', bulletList(optionalIngredients), '');
+  }
+
+  if (hardware.length) {
+    lines.push('## Hardware', '', bulletList(hardware), '');
+  }
+
+  lines.push('## Instructions', '', orderedList(instructions), '');
+
+  if (notes) {
+    lines.push('## Notes', '', formatMarkdownBlock(notes), '');
   }
 
   if (allergens) {
     lines.push('## Dietary Notes', '', formatMarkdownBlock(allergens), '');
   }
 
+  if (tags.length) {
+    lines.push('## Tags', '', bulletList(tags), '');
+  }
+
   const markdown = `${lines.join('\n').replace(/\n{3,}/g, '\n\n').trim()}\n`;
   const creditsContributor = formatCreditsContributor(displayName, hackerHandle, creditUrl);
   const creditsEntry = `- ${creditsContributor} - ${cleanInlineText(title)}`;
-  const prTitle = `Add Hack My Chili ${contestYear}: ${title}`;
-  const commitMessage = `Add Hack My Chili recipe: ${title}`;
-  const creditsCommitMessage = `Update credits for Hack My Chili: ${title}`;
+  const commitMessage = `Add recipe: ${title}`;
+  const creditsCommitMessage = `Update credits for recipe: ${title}`;
+  const prTitle = `Add recipe: ${title}`;
   const prBody = [
-    `Adds ${creditName}'s Hack My Chili ${contestYear} entry.`,
+    `Adds ${creditName}'s recipe, ${title}.`,
     '',
     `Generated recipe file: \`${filePath}\``,
     'Updates `CREDITS.md` with the submitted public name and handle.',
     '',
     'Submission notes:',
-    `- Style: ${chiliStyle || 'not provided'}`,
-    `- Heat: ${heatLevel || 'not provided'}`,
+    `- Category: ${categoryDir || 'not provided'}`,
+    `- Tags: ${tags.length ? tags.join(', ') : 'not provided'}`,
     '- License/public-sharing consent was captured by the intake form.',
     '',
     'Maintainer checklist:',
     '- [ ] Review formatting and recipe clarity.',
+    '- [ ] Confirm category placement.',
     '- [ ] Confirm the public credit line is acceptable.',
     '- [ ] Add or adjust credits if needed.'
   ].join('\n');
@@ -433,11 +468,9 @@ function buildRecipe(source, config = {}, options = {}) {
       draft: false
     },
     publicSummary: {
-      contestYear,
+      categoryDir,
       creditName,
       recipeName: title,
-      chiliStyle,
-      heatLevel,
       filePath
     }
   };
@@ -454,7 +487,7 @@ if (typeof require !== 'undefined' && typeof module !== 'undefined' && require.m
 
   const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));
   const result = buildRecipe(input, {}, {
-    now: new Date('2026-04-28T00:00:00Z'),
+    now: new Date('2026-04-30T00:00:00Z'),
     executionId: 'local_test'
   });
 
@@ -465,9 +498,10 @@ if (typeof module !== 'undefined' && module.exports) {
   module.exports = {
     DEFAULT_CONFIG,
     buildRecipe,
-    readField,
-    formatCreditsContributor,
     formatMarkdownBlock,
+    formatCreditsContributor,
+    normalizeCategory,
+    readField,
     slugify,
     splitLines
   };

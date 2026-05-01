@@ -5,7 +5,7 @@ const path = require('path');
 
 const root = __dirname;
 const builderPath = path.join(root, 'recipe-builder.js');
-const workflowPath = path.join(root, 'danger-chili-intake.workflow.json');
+const workflowPath = path.join(root, 'danger-cookbook-proxy.workflow.json');
 const builderCode = fs.readFileSync(builderPath, 'utf8');
 
 const n8nCode = `${builderCode}
@@ -55,13 +55,13 @@ function appendCreditsEntry(markdown, entry) {
 
   const trimmed = markdown.replace(/\\s+$/g, '');
   return {
-    markdown: \`\${trimmed}\\n\${entry}\\n\`,
+    markdown: trimmed + '\\n' + entry + '\\n',
     added: true
   };
 }
 
 const creditsFile = $input.first().json;
-const recipe = $('Build Recipe Markdown').item.json;
+const recipe = $('Build Recipe Markdown').first().json;
 
 if (!creditsFile || !creditsFile.content || !creditsFile.sha) {
   throw new Error('CREDITS.md content and sha are required to update credits.');
@@ -105,7 +105,7 @@ const githubHeaders = {
     },
     {
       name: 'User-Agent',
-      value: 'n8n-danger-chili'
+      value: 'n8n-danger-cookbook-proxy'
     }
   ]
 };
@@ -135,30 +135,51 @@ function httpNode(id, name, method, url, jsonBody, position) {
   };
 }
 
+const categoryOptions = [
+  'APPETIZERS',
+  'BREAKFAST',
+  'COOKWARE',
+  'DESSERTS',
+  'DRINKS',
+  'ENTREES',
+  'SAUCES',
+  'SIDES',
+  'SNACKS'
+].map((option) => ({ option }));
+
 const workflow = {
-  name: 'Danger-Chili Intake to GitHub PR',
+  name: 'Danger-CookbookProxy',
   nodes: [
     {
       parameters: {
-        formTitle: 'Danger-Chili: Hack My Chili Recipe Intake',
-        formDescription: 'Submit a chili recipe for cookbook review. Only public recipe text and credit details should be entered here.',
+        formTitle: 'Danger-CookbookProxy: Hacker Cookbook Recipe Submission',
+        formDescription: 'Submit any recipe for cookbook review. Only public recipe text and credit details should be entered here.',
         formFields: {
           values: [
-            { fieldLabel: 'Contest Year', fieldName: 'contest_year', fieldType: 'number', requiredField: true },
+            {
+              fieldLabel: 'Recipe Category',
+              fieldName: 'category',
+              fieldType: 'dropdown',
+              fieldOptions: {
+                values: categoryOptions
+              },
+              requiredField: true
+            },
             { fieldLabel: 'Public Display Name', fieldName: 'display_name', requiredField: true },
             { fieldLabel: 'Hacker Handle', fieldName: 'hacker_handle' },
             { fieldLabel: 'Public Credit URL', fieldName: 'credit_url' },
             { fieldLabel: 'Recipe Name', fieldName: 'recipe_name', requiredField: true },
-            { fieldLabel: 'Recipe Story', fieldName: 'recipe_story', fieldType: 'textarea' },
-            { fieldLabel: 'Chili Style', fieldName: 'chili_style' },
-            { fieldLabel: 'Heat Level', fieldName: 'heat_level' },
+            { fieldLabel: 'Recipe Description', fieldName: 'recipe_description', fieldType: 'textarea' },
             { fieldLabel: 'Servings', fieldName: 'servings' },
             { fieldLabel: 'Prep Time', fieldName: 'prep_time' },
             { fieldLabel: 'Cook Time', fieldName: 'cook_time' },
+            { fieldLabel: 'Difficulty', fieldName: 'difficulty' },
             { fieldLabel: 'Ingredients', fieldName: 'ingredients', fieldType: 'textarea', requiredField: true },
+            { fieldLabel: 'Optional Ingredients', fieldName: 'optional_ingredients', fieldType: 'textarea' },
+            { fieldLabel: 'Hardware or Equipment', fieldName: 'hardware', fieldType: 'textarea' },
             { fieldLabel: 'Instructions', fieldName: 'instructions', fieldType: 'textarea', requiredField: true },
-            { fieldLabel: 'How I Hack My Chili', fieldName: 'hack_story', fieldType: 'textarea', requiredField: true },
-            { fieldLabel: 'Serving Notes', fieldName: 'serving_notes', fieldType: 'textarea' },
+            { fieldLabel: 'Notes', fieldName: 'notes', fieldType: 'textarea' },
+            { fieldLabel: 'Tags', fieldName: 'tags' },
             { fieldLabel: 'Allergens or Dietary Notes', fieldName: 'allergens', fieldType: 'textarea' },
             { fieldLabel: 'I have the right to share this recipe under the cookbook license', fieldName: 'consent_license', fieldType: 'checkbox', requiredField: true },
             { fieldLabel: 'I understand the chosen credit name, story, and recipe text will be public', fieldName: 'consent_public', fieldType: 'checkbox', requiredField: true }
@@ -170,7 +191,7 @@ const workflow = {
         }
       },
       id: 'form-trigger',
-      name: 'Chili Entry Form',
+      name: 'Recipe Submission Form',
       type: 'n8n-nodes-base.formTrigger',
       typeVersion: 2.2,
       position: [-680, 0],
@@ -191,7 +212,7 @@ const workflow = {
       'get-base-ref',
       'Get Base Ref',
       'GET',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/git/ref/heads/{{ $('Build Recipe Markdown').item.json.github.baseBranch }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/git/ref/heads/{{ $('Build Recipe Markdown').first().json.github.baseBranch }}",
       null,
       [-160, 0]
     ),
@@ -199,23 +220,23 @@ const workflow = {
       'create-branch',
       'Create Branch',
       'POST',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/git/refs",
-      "={{ { ref: 'refs/heads/' + $('Build Recipe Markdown').item.json.branchName, sha: $json.object.sha } }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/git/refs",
+      "={{ { ref: 'refs/heads/' + $('Build Recipe Markdown').first().json.branchName, sha: $json.object.sha } }}",
       [100, 0]
     ),
     httpNode(
       'create-recipe-file',
       'Create Recipe File',
       'PUT',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').item.json.filePath }}",
-      "={{ $('Build Recipe Markdown').item.json.githubFileBody }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').first().json.filePath }}",
+      "={{ $('Build Recipe Markdown').first().json.githubFileBody }}",
       [360, 0]
     ),
     httpNode(
       'get-credits-file',
       'Get Credits File',
       'GET',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/CREDITS.md?ref={{ encodeURIComponent($('Build Recipe Markdown').item.json.branchName) }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/CREDITS.md?ref={{ encodeURIComponent($('Build Recipe Markdown').first().json.branchName) }}",
       null,
       [620, 0]
     ),
@@ -234,21 +255,21 @@ const workflow = {
       'update-credits-file',
       'Update Credits File',
       'PUT',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').item.json.credits.path }}",
-      "={{ $('Build Credits Update').item.json.githubCreditsFileBody }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').first().json.credits.path }}",
+      "={{ $('Build Credits Update').first().json.githubCreditsFileBody }}",
       [1140, 0]
     ),
     httpNode(
       'create-pr',
       'Create Pull Request',
       'POST',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.targetOwner }}/{{ $('Build Recipe Markdown').item.json.github.targetRepo }}/pulls",
-      "={{ $('Build Recipe Markdown').item.json.pullRequestBody }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.targetOwner }}/{{ $('Build Recipe Markdown').first().json.github.targetRepo }}/pulls",
+      "={{ $('Build Recipe Markdown').first().json.pullRequestBody }}",
       [1400, 0]
     )
   ],
   connections: {
-    'Chili Entry Form': {
+    'Recipe Submission Form': {
       main: [[{ node: 'Build Recipe Markdown', type: 'main', index: 0 }]]
     },
     'Build Recipe Markdown': {

@@ -1,0 +1,505 @@
+{
+  "name": "Danger-CookbookProxy",
+  "nodes": [
+    {
+      "parameters": {
+        "formTitle": "Danger-CookbookProxy: Hacker Cookbook Recipe Submission",
+        "formDescription": "Submit any recipe for cookbook review. Only public recipe text and credit details should be entered here.",
+        "formFields": {
+          "values": [
+            {
+              "fieldLabel": "Recipe Category",
+              "fieldName": "category",
+              "fieldType": "dropdown",
+              "fieldOptions": {
+                "values": [
+                  {
+                    "option": "APPETIZERS"
+                  },
+                  {
+                    "option": "BREAKFAST"
+                  },
+                  {
+                    "option": "COOKWARE"
+                  },
+                  {
+                    "option": "DESSERTS"
+                  },
+                  {
+                    "option": "DRINKS"
+                  },
+                  {
+                    "option": "ENTREES"
+                  },
+                  {
+                    "option": "SAUCES"
+                  },
+                  {
+                    "option": "SIDES"
+                  },
+                  {
+                    "option": "SNACKS"
+                  }
+                ]
+              },
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Public Display Name",
+              "fieldName": "display_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Hacker Handle",
+              "fieldName": "hacker_handle"
+            },
+            {
+              "fieldLabel": "Public Credit URL",
+              "fieldName": "credit_url"
+            },
+            {
+              "fieldLabel": "Recipe Name",
+              "fieldName": "recipe_name",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Recipe Description",
+              "fieldName": "recipe_description",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Servings",
+              "fieldName": "servings"
+            },
+            {
+              "fieldLabel": "Prep Time",
+              "fieldName": "prep_time"
+            },
+            {
+              "fieldLabel": "Cook Time",
+              "fieldName": "cook_time"
+            },
+            {
+              "fieldLabel": "Difficulty",
+              "fieldName": "difficulty"
+            },
+            {
+              "fieldLabel": "Ingredients",
+              "fieldName": "ingredients",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Optional Ingredients",
+              "fieldName": "optional_ingredients",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Hardware or Equipment",
+              "fieldName": "hardware",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Instructions",
+              "fieldName": "instructions",
+              "fieldType": "textarea",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "Notes",
+              "fieldName": "notes",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "Tags",
+              "fieldName": "tags"
+            },
+            {
+              "fieldLabel": "Allergens or Dietary Notes",
+              "fieldName": "allergens",
+              "fieldType": "textarea"
+            },
+            {
+              "fieldLabel": "I have the right to share this recipe under the cookbook license",
+              "fieldName": "consent_license",
+              "fieldType": "checkbox",
+              "requiredField": true
+            },
+            {
+              "fieldLabel": "I understand the chosen credit name, story, and recipe text will be public",
+              "fieldName": "consent_public",
+              "fieldType": "checkbox",
+              "requiredField": true
+            }
+          ]
+        },
+        "options": {
+          "ignoreBots": true,
+          "buttonLabel": "Submit Recipe"
+        }
+      },
+      "id": "form-trigger",
+      "name": "Recipe Submission Form",
+      "type": "n8n-nodes-base.formTrigger",
+      "typeVersion": 2.2,
+      "position": [
+        -680,
+        0
+      ],
+      "webhookId": "replace-after-import"
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "'use strict';\n\nconst DEFAULT_CONFIG = {\n  sourceOwner: 'OIFhax',\n  sourceRepo: '1337-Noms-The-Hacker-Cookbook',\n  targetOwner: 'pale-shadow',\n  targetRepo: '1337-Noms-The-Hacker-Cookbook',\n  baseBranch: 'main',\n  branchPrefix: 'danger-cookbook-proxy',\n  allowedCategories: [\n    'APPETIZERS',\n    'BREAKFAST',\n    'COOKWARE',\n    'DESSERTS',\n    'DRINKS',\n    'ENTREES',\n    'SAUCES',\n    'SIDES',\n    'SNACKS'\n  ]\n};\n\nconst FIELD_ALIASES = {\n  category: ['category', 'categoryDir', 'category_dir', 'Recipe Category', 'Cookbook Category', 'section'],\n  displayName: ['display_name', 'displayName', 'Public Display Name', 'name', 'chef_name', 'chefName'],\n  hackerHandle: ['hacker_handle', 'hackerHandle', 'Hacker Handle', 'handle', 'credit_handle', 'creditHandle'],\n  creditUrl: ['credit_url', 'creditUrl', 'Public Credit URL', 'profile_url', 'profileUrl'],\n  recipeName: ['recipe_name', 'recipeName', 'Recipe Name', 'dish_name', 'dishName', 'title'],\n  recipeDescription: ['recipe_description', 'recipeDescription', 'Recipe Description', 'Recipe Story', 'story', 'description'],\n  servings: ['servings', 'Servings', 'yield', 'Yield', 'serves'],\n  prepTime: ['prep_time', 'prepTime', 'Prep Time'],\n  cookTime: ['cook_time', 'cookTime', 'Cook Time'],\n  difficulty: ['difficulty', 'Difficulty'],\n  ingredients: ['ingredients', 'Ingredients'],\n  optionalIngredients: ['optional_ingredients', 'optionalIngredients', 'Optional Ingredients', 'optional'],\n  instructions: ['instructions', 'Instructions', 'steps'],\n  notes: ['notes', 'Notes', 'serving_notes', 'servingNotes', 'Serving Notes', 'pairing', 'pairings', 'garnish'],\n  hardware: ['hardware', 'Hardware', 'equipment', 'Equipment', 'cookware'],\n  tags: ['tags', 'Tags'],\n  allergens: ['allergens', 'Allergens or Dietary Notes', 'dietary_notes', 'dietaryNotes'],\n  consentLicense: [\n    'consent_license',\n    'consentLicense',\n    'I have the right to share this recipe under the cookbook license',\n    'license_consent',\n    'licenseConsent'\n  ],\n  consentPublic: [\n    'consent_public',\n    'consentPublic',\n    'I understand the chosen credit name, story, and recipe text will be public',\n    'public_consent',\n    'publicConsent'\n  ]\n};\n\nconst FORM_PAYLOAD_KEYS = [\n  'body',\n  'data',\n  'fields',\n  'formData',\n  'form_data',\n  'payload',\n  'submission',\n  'submissionData',\n  'submittedData'\n];\n\nfunction isPlainObject(value) {\n  return Boolean(value) && typeof value === 'object' && !Array.isArray(value);\n}\n\nfunction cleanText(value) {\n  return String(value === undefined || value === null ? '' : value)\n    .replace(/\\r\\n?/g, '\\n')\n    .split('\\n')\n    .map((line) => line.trimEnd())\n    .join('\\n')\n    .trim();\n}\n\nfunction cleanInlineText(value) {\n  return cleanText(value).replace(/\\s+/g, ' ');\n}\n\nfunction isMarkdownListLine(line) {\n  return /^\\s*(?:[-*+]|\\d+[.)])\\s+/.test(line);\n}\n\nfunction isBlankLine(line) {\n  return /^\\s*$/.test(line);\n}\n\nfunction formatMarkdownBlock(value) {\n  const lines = cleanText(value).split('\\n');\n  const formatted = [];\n\n  for (const line of lines) {\n    const previous = formatted[formatted.length - 1];\n    const startsList = isMarkdownListLine(line);\n    const previousIsList = previous !== undefined && isMarkdownListLine(previous);\n\n    if (startsList && previous !== undefined && !isBlankLine(previous) && !previousIsList) {\n      formatted.push('');\n    }\n\n    if (!startsList && !isBlankLine(line) && previousIsList) {\n      formatted.push('');\n    }\n\n    formatted.push(line);\n  }\n\n  return formatted.join('\\n').replace(/\\n{3,}/g, '\\n\\n').trim();\n}\n\nfunction normalizedKey(value) {\n  return cleanText(value)\n    .toLowerCase()\n    .replace(/[^a-z0-9]+/g, '');\n}\n\nfunction collectSourceCandidates(source, seen = new Set()) {\n  if (!isPlainObject(source) || seen.has(source)) {\n    return [];\n  }\n\n  seen.add(source);\n\n  const candidates = [source];\n\n  for (const key of FORM_PAYLOAD_KEYS) {\n    if (isPlainObject(source[key])) {\n      candidates.push(...collectSourceCandidates(source[key], seen));\n    }\n  }\n\n  return candidates;\n}\n\nfunction findField(source, names) {\n  for (const candidate of collectSourceCandidates(source)) {\n    for (const name of names) {\n      if (Object.prototype.hasOwnProperty.call(candidate, name) && candidate[name] !== undefined && candidate[name] !== null) {\n        return candidate[name];\n      }\n    }\n\n    const normalizedLookup = {};\n    for (const [key, value] of Object.entries(candidate)) {\n      normalizedLookup[normalizedKey(key)] = value;\n    }\n\n    for (const name of names) {\n      const key = normalizedKey(name);\n      if (Object.prototype.hasOwnProperty.call(normalizedLookup, key) && normalizedLookup[key] !== undefined && normalizedLookup[key] !== null) {\n        return normalizedLookup[key];\n      }\n    }\n  }\n\n  return undefined;\n}\n\nfunction readField(source, key, fallback = '') {\n  const value = findField(source, FIELD_ALIASES[key] || [key]);\n\n  return value === undefined ? fallback : value;\n}\n\nfunction splitLines(value) {\n  if (Array.isArray(value)) {\n    return value.flatMap(splitLines);\n  }\n\n  return cleanText(value)\n    .split('\\n')\n    .map((line) => line.replace(/^\\s*(?:[-*+]|\\d+[.)])\\s+/, '').trim())\n    .filter(Boolean);\n}\n\nfunction splitDelimited(value) {\n  if (Array.isArray(value)) {\n    return value.flatMap(splitDelimited);\n  }\n\n  return cleanText(value)\n    .split(/[\\n,]+/)\n    .map((item) => item.trim())\n    .filter(Boolean);\n}\n\nfunction isAffirmative(value) {\n  if (typeof value === 'boolean') {\n    return value;\n  }\n\n  if (Array.isArray(value)) {\n    return value.length > 0 && !value.every((item) => ['0', 'false', 'no', 'n', 'off', 'unchecked'].includes(\n      String(item === undefined || item === null ? '' : item).trim().toLowerCase()\n    ));\n  }\n\n  const cleaned = String(value === undefined || value === null ? '' : value).trim().toLowerCase();\n\n  if (!cleaned || ['0', 'false', 'no', 'n', 'off', 'unchecked'].includes(cleaned)) {\n    return false;\n  }\n\n  return true;\n}\n\nfunction slugify(value, fallback = 'untitled') {\n  const slug = cleanText(value)\n    .toLowerCase()\n    .replace(/@/g, '')\n    .replace(/&/g, ' and ')\n    .replace(/[^a-z0-9]+/g, '_')\n    .replace(/^_+|_+$/g, '')\n    .replace(/_{2,}/g, '_')\n    .slice(0, 72);\n\n  return slug || fallback;\n}\n\nfunction normalizeHandle(value) {\n  const cleaned = cleanInlineText(value);\n\n  if (!cleaned) {\n    return '';\n  }\n\n  return cleaned.startsWith('@') ? cleaned : `@${cleaned}`;\n}\n\nfunction safeUrl(value) {\n  const cleaned = cleanInlineText(value);\n\n  if (!cleaned) {\n    return '';\n  }\n\n  try {\n    const url = new URL(cleaned);\n    return ['http:', 'https:'].includes(url.protocol) ? url.toString() : '';\n  } catch (_error) {\n    return '';\n  }\n}\n\nfunction normalizeCategory(value, allowedCategories = DEFAULT_CONFIG.allowedCategories) {\n  const cleaned = cleanInlineText(value);\n  const normalized = normalizedKey(cleaned);\n\n  if (!normalized) {\n    return '';\n  }\n\n  return allowedCategories.find((category) => normalizedKey(category) === normalized) || '';\n}\n\nfunction bulletList(items) {\n  return items.map((item) => `- ${item}`).join('\\n');\n}\n\nfunction orderedList(items) {\n  return items.map((item, index) => `${index + 1}. ${item}`).join('\\n');\n}\n\nfunction addLabeledValue(lines, label, value) {\n  const cleaned = cleanInlineText(value);\n\n  if (cleaned) {\n    lines.push(`- ${label}: ${cleaned}`);\n  }\n}\n\nfunction escapeMarkdownLinkLabel(value) {\n  return cleanInlineText(value)\n    .replace(/\\\\/g, '\\\\\\\\')\n    .replace(/\\[/g, '\\\\[')\n    .replace(/\\]/g, '\\\\]');\n}\n\nfunction formatCreditsContributor(displayName, hackerHandle, creditUrl) {\n  const contributor = hackerHandle && displayName\n    ? `${hackerHandle} (${displayName})`\n    : hackerHandle || displayName || 'Anonymous';\n  const cleaned = cleanInlineText(contributor);\n\n  return creditUrl ? `[${escapeMarkdownLinkLabel(cleaned)}](${creditUrl})` : cleaned;\n}\n\nfunction encodeBase64(value) {\n  if (typeof Buffer !== 'undefined') {\n    return Buffer.from(value, 'utf8').toString('base64');\n  }\n\n  return btoa(unescape(encodeURIComponent(value)));\n}\n\nfunction buildRecipe(source, config = {}, options = {}) {\n  const mergedConfig = Object.assign({}, DEFAULT_CONFIG, config);\n  const allowedCategories = mergedConfig.allowedCategories || DEFAULT_CONFIG.allowedCategories;\n  const now = options.now || new Date();\n  const categoryInput = readField(source, 'category');\n  const categoryDir = normalizeCategory(categoryInput, allowedCategories);\n  const displayName = cleanInlineText(readField(source, 'displayName'));\n  const hackerHandle = normalizeHandle(readField(source, 'hackerHandle'));\n  const creditUrl = safeUrl(readField(source, 'creditUrl'));\n  const recipeName = cleanInlineText(readField(source, 'recipeName'));\n  const recipeDescription = cleanText(readField(source, 'recipeDescription'));\n  const servings = cleanInlineText(readField(source, 'servings'));\n  const prepTime = cleanInlineText(readField(source, 'prepTime'));\n  const cookTime = cleanInlineText(readField(source, 'cookTime'));\n  const difficulty = cleanInlineText(readField(source, 'difficulty'));\n  const ingredients = splitLines(readField(source, 'ingredients'));\n  const optionalIngredients = splitLines(readField(source, 'optionalIngredients'));\n  const instructions = splitLines(readField(source, 'instructions'));\n  const notes = cleanText(readField(source, 'notes'));\n  const hardware = splitDelimited(readField(source, 'hardware'));\n  const tags = splitDelimited(readField(source, 'tags'));\n  const allergens = cleanText(readField(source, 'allergens'));\n  const consentLicense = isAffirmative(readField(source, 'consentLicense'));\n  const consentPublic = isAffirmative(readField(source, 'consentPublic'));\n  const creditName = hackerHandle || displayName || 'Anonymous';\n  const validationErrors = [];\n\n  if (!categoryDir) {\n    validationErrors.push(`Recipe category is required and must be one of: ${allowedCategories.join(', ')}.`);\n  }\n\n  if (!recipeName) {\n    validationErrors.push('Recipe name is required.');\n  }\n\n  if (!displayName && !hackerHandle) {\n    validationErrors.push('Display name or hacker handle is required.');\n  }\n\n  if (!ingredients.length) {\n    validationErrors.push('At least one ingredient is required.');\n  }\n\n  if (!instructions.length) {\n    validationErrors.push('At least one instruction is required.');\n  }\n\n  if (!consentLicense) {\n    validationErrors.push('License consent is required.');\n  }\n\n  if (!consentPublic) {\n    validationErrors.push('Public sharing consent is required.');\n  }\n\n  const title = recipeName || 'Untitled Recipe';\n  const recipeSlug = slugify(title, 'recipe');\n  const creditSlug = slugify(creditName, 'anonymous');\n  const uniqueId = slugify(options.executionId || options.submissionId || String(now.getTime()), 'submission');\n  const filePath = `${categoryDir || 'ENTREES'}/${creditSlug}_${recipeSlug}.md`;\n  const branchName = `${mergedConfig.branchPrefix}/${categoryDir || 'recipe'}/${creditSlug}_${recipeSlug}_${uniqueId}`;\n  const headingCredit = creditName === 'Anonymous' ? '' : `${creditName}'s `;\n  const lines = [`# ${headingCredit}${title}`, ''];\n\n  if (recipeDescription) {\n    lines.push(formatMarkdownBlock(recipeDescription), '');\n  }\n\n  const summary = [];\n  addLabeledValue(summary, 'Category', categoryDir);\n  addLabeledValue(summary, 'Credit', creditUrl ? `[${creditName}](${creditUrl})` : creditName);\n  addLabeledValue(summary, 'Yield', servings);\n  addLabeledValue(summary, 'Prep time', prepTime);\n  addLabeledValue(summary, 'Cook time', cookTime);\n  addLabeledValue(summary, 'Difficulty', difficulty);\n\n  if (summary.length) {\n    lines.push(...summary, '');\n  }\n\n  lines.push('## Ingredients', '', bulletList(ingredients), '');\n\n  if (optionalIngredients.length) {\n    lines.push('## Optional', '', bulletList(optionalIngredients), '');\n  }\n\n  if (hardware.length) {\n    lines.push('## Hardware', '', bulletList(hardware), '');\n  }\n\n  lines.push('## Instructions', '', orderedList(instructions), '');\n\n  if (notes) {\n    lines.push('## Notes', '', formatMarkdownBlock(notes), '');\n  }\n\n  if (allergens) {\n    lines.push('## Dietary Notes', '', formatMarkdownBlock(allergens), '');\n  }\n\n  if (tags.length) {\n    lines.push('## Tags', '', bulletList(tags), '');\n  }\n\n  const markdown = `${lines.join('\\n').replace(/\\n{3,}/g, '\\n\\n').trim()}\\n`;\n  const creditsContributor = formatCreditsContributor(displayName, hackerHandle, creditUrl);\n  const creditsEntry = `- ${creditsContributor} - ${cleanInlineText(title)}`;\n  const commitMessage = `Add recipe: ${title}`;\n  const creditsCommitMessage = `Update credits for recipe: ${title}`;\n  const prTitle = `Add recipe: ${title}`;\n  const prBody = [\n    `Adds ${creditName}'s recipe, ${title}.`,\n    '',\n    `Generated recipe file: \\`${filePath}\\``,\n    'Updates `CREDITS.md` with the submitted public name and handle.',\n    '',\n    'Submission notes:',\n    `- Category: ${categoryDir || 'not provided'}`,\n    `- Tags: ${tags.length ? tags.join(', ') : 'not provided'}`,\n    '- License/public-sharing consent was captured by the intake form.',\n    '',\n    'Maintainer checklist:',\n    '- [ ] Review formatting and recipe clarity.',\n    '- [ ] Confirm category placement.',\n    '- [ ] Confirm the public credit line is acceptable.',\n    '- [ ] Add or adjust credits if needed.'\n  ].join('\\n');\n\n  return {\n    validationErrors,\n    markdown,\n    contentBase64: encodeBase64(markdown),\n    filePath,\n    branchName,\n    commitMessage,\n    creditsCommitMessage,\n    prTitle,\n    prBody,\n    github: {\n      sourceOwner: mergedConfig.sourceOwner,\n      sourceRepo: mergedConfig.sourceRepo,\n      targetOwner: mergedConfig.targetOwner,\n      targetRepo: mergedConfig.targetRepo,\n      baseBranch: mergedConfig.baseBranch\n    },\n    githubFileBody: {\n      message: commitMessage,\n      content: encodeBase64(markdown),\n      branch: branchName\n    },\n    credits: {\n      path: 'CREDITS.md',\n      entry: creditsEntry,\n      contributorName: displayName,\n      contributorHandle: hackerHandle,\n      contributorDisplay: creditsContributor,\n      recipeName: title\n    },\n    pullRequestBody: {\n      title: prTitle,\n      head: mergedConfig.sourceOwner === mergedConfig.targetOwner\n        ? branchName\n        : `${mergedConfig.sourceOwner}:${branchName}`,\n      base: mergedConfig.baseBranch,\n      body: prBody,\n      maintainer_can_modify: true,\n      draft: false\n    },\n    publicSummary: {\n      categoryDir,\n      creditName,\n      recipeName: title,\n      filePath\n    }\n  };\n}\n\nif (typeof require !== 'undefined' && typeof module !== 'undefined' && require.main === module) {\n  const fs = require('fs');\n  const inputPath = process.argv[2];\n\n  if (!inputPath) {\n    console.error('Usage: node recipe-builder.js sample-submission.json');\n    process.exit(1);\n  }\n\n  const input = JSON.parse(fs.readFileSync(inputPath, 'utf8'));\n  const result = buildRecipe(input, {}, {\n    now: new Date('2026-04-30T00:00:00Z'),\n    executionId: 'local_test'\n  });\n\n  console.log(JSON.stringify(result, null, 2));\n}\n\nif (typeof module !== 'undefined' && module.exports) {\n  module.exports = {\n    DEFAULT_CONFIG,\n    buildRecipe,\n    formatMarkdownBlock,\n    formatCreditsContributor,\n    normalizeCategory,\n    readField,\n    slugify,\n    splitLines\n  };\n}\n\n\nconst result = buildRecipe($input.first().json, DEFAULT_CONFIG, {\n  executionId: $execution.id\n});\n\nif (result.validationErrors.length) {\n  throw new Error(result.validationErrors.join(' '));\n}\n\nreturn [{ json: result }];\n"
+      },
+      "id": "build-recipe",
+      "name": "Build Recipe Markdown",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -420,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/git/ref/heads/{{ $('Build Recipe Markdown').first().json.github.baseBranch }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-cookbook-proxy"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-base-ref",
+      "name": "Get Base Ref",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -160,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/git/refs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-cookbook-proxy"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ { ref: 'refs/heads/' + $('Build Recipe Markdown').first().json.branchName, sha: $json.object.sha } }}"
+      },
+      "id": "create-branch",
+      "name": "Create Branch",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        100,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').first().json.filePath }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-cookbook-proxy"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Build Recipe Markdown').first().json.githubFileBody }}"
+      },
+      "id": "create-recipe-file",
+      "name": "Create Recipe File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        360,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "GET",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/CREDITS.md?ref={{ encodeURIComponent($('Build Recipe Markdown').first().json.branchName) }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-cookbook-proxy"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "id": "get-credits-file",
+      "name": "Get Credits File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        620,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "'use strict';\n\nfunction decodeBase64(value) {\n  const compact = String(value || '').replace(/\\s/g, '');\n\n  if (typeof Buffer !== 'undefined') {\n    return Buffer.from(compact, 'base64').toString('utf8');\n  }\n\n  return decodeURIComponent(escape(atob(compact)));\n}\n\nfunction encodeBase64(value) {\n  if (typeof Buffer !== 'undefined') {\n    return Buffer.from(value, 'utf8').toString('base64');\n  }\n\n  return btoa(unescape(encodeURIComponent(value)));\n}\n\nfunction normalizeForCompare(value) {\n  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');\n}\n\nfunction appendCreditsEntry(markdown, entry) {\n  const normalizedMarkdown = normalizeForCompare(markdown);\n  const normalizedEntry = normalizeForCompare(entry);\n\n  if (normalizedEntry && normalizedMarkdown.includes(normalizedEntry)) {\n    return { markdown, added: false };\n  }\n\n  const trimmed = markdown.replace(/\\s+$/g, '');\n  return {\n    markdown: trimmed + '\\n' + entry + '\\n',\n    added: true\n  };\n}\n\nconst creditsFile = $input.first().json;\nconst recipe = $('Build Recipe Markdown').first().json;\n\nif (!creditsFile || !creditsFile.content || !creditsFile.sha) {\n  throw new Error('CREDITS.md content and sha are required to update credits.');\n}\n\nif (!recipe.credits || !recipe.credits.entry) {\n  throw new Error('Recipe credits entry is missing.');\n}\n\nconst currentMarkdown = decodeBase64(creditsFile.content);\nconst update = appendCreditsEntry(currentMarkdown, recipe.credits.entry);\n\nreturn [{\n  json: {\n    creditsPath: recipe.credits.path,\n    creditsEntry: recipe.credits.entry,\n    creditsEntryAdded: update.added,\n    githubCreditsFileBody: {\n      message: recipe.creditsCommitMessage,\n      content: encodeBase64(update.markdown),\n      branch: recipe.branchName,\n      sha: creditsFile.sha\n    }\n  }\n}];\n"
+      },
+      "id": "build-credits-update",
+      "name": "Build Credits Update",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        880,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "PUT",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').first().json.credits.path }}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-cookbook-proxy"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Build Credits Update').first().json.githubCreditsFileBody }}"
+      },
+      "id": "update-credits-file",
+      "name": "Update Credits File",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1140,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.targetOwner }}/{{ $('Build Recipe Markdown').first().json.github.targetRepo }}/pulls",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Accept",
+              "value": "application/vnd.github+json"
+            },
+            {
+              "name": "Authorization",
+              "value": "={{ \"Bearer \" + $vars.GITHUB_TOKEN }}"
+            },
+            {
+              "name": "X-GitHub-Api-Version",
+              "value": "2026-03-10"
+            },
+            {
+              "name": "User-Agent",
+              "value": "n8n-danger-cookbook-proxy"
+            }
+          ]
+        },
+        "options": {},
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Build Recipe Markdown').first().json.pullRequestBody }}"
+      },
+      "id": "create-pr",
+      "name": "Create Pull Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1400,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Recipe Submission Form": {
+      "main": [
+        [
+          {
+            "node": "Build Recipe Markdown",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Recipe Markdown": {
+      "main": [
+        [
+          {
+            "node": "Get Base Ref",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Base Ref": {
+      "main": [
+        [
+          {
+            "node": "Create Branch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Branch": {
+      "main": [
+        [
+          {
+            "node": "Create Recipe File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create Recipe File": {
+      "main": [
+        [
+          {
+            "node": "Get Credits File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Credits File": {
+      "main": [
+        [
+          {
+            "node": "Build Credits Update",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Build Credits Update": {
+      "main": [
+        [
+          {
+            "node": "Update Credits File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Update Credits File": {
+      "main": [
+        [
+          {
+            "node": "Create Pull Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "pinData": {},
+  "meta": {
+    "templateCredsSetupCompleted": false
+  }
+}

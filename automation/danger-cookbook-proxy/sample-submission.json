@@ -1,0 +1,21 @@
+{
+  "category": "SNACKS",
+  "display_name": "Example Chef",
+  "hacker_handle": "@example",
+  "credit_url": "https://github.com/example",
+  "recipe_name": "Packet Capture Popcorn",
+  "recipe_description": "A fast snack for long debugging sessions, tuned for crunch and just enough heat.",
+  "servings": "4 bowls",
+  "prep_time": "5 minutes",
+  "cook_time": "8 minutes",
+  "difficulty": "Easy",
+  "ingredients": "1/2 cup popcorn kernels\n2 tbsp neutral oil\n2 tbsp melted butter\n1 tsp smoked paprika\n1/2 tsp garlic powder\n1/4 tsp cayenne\nSalt to taste",
+  "optional_ingredients": "Nutritional yeast\nLime zest",
+  "hardware": "Heavy pot with lid\nLarge mixing bowl",
+  "instructions": "Heat the oil and three test kernels in a heavy pot.\nWhen the test kernels pop, add the remaining kernels and cover.\nShake the pot until popping slows.\nToss the popcorn with butter, spices, and salt.\nServe immediately.",
+  "notes": "For a less spicy batch, skip the cayenne and add extra smoked paprika.",
+  "tags": "snack, spicy, quick",
+  "allergens": "Contains dairy if made with butter.",
+  "consent_license": true,
+  "consent_public": true
+}
