@@ -61,7 +61,7 @@ function appendCreditsEntry(markdown, entry) {
 }
 
 const creditsFile = $input.first().json;
-const recipe = $('Build Recipe Markdown').item.json;
+const recipe = $('Build Recipe Markdown').first().json;
 
 if (!creditsFile || !creditsFile.content || !creditsFile.sha) {
   throw new Error('CREDITS.md content and sha are required to update credits.');
@@ -191,7 +191,7 @@ const workflow = {
       'get-base-ref',
       'Get Base Ref',
       'GET',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/git/ref/heads/{{ $('Build Recipe Markdown').item.json.github.baseBranch }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/git/ref/heads/{{ $('Build Recipe Markdown').first().json.github.baseBranch }}",
       null,
       [-160, 0]
     ),
@@ -199,23 +199,23 @@ const workflow = {
       'create-branch',
       'Create Branch',
       'POST',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/git/refs",
-      "={{ { ref: 'refs/heads/' + $('Build Recipe Markdown').item.json.branchName, sha: $json.object.sha } }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/git/refs",
+      "={{ { ref: 'refs/heads/' + $('Build Recipe Markdown').first().json.branchName, sha: $json.object.sha } }}",
       [100, 0]
     ),
     httpNode(
       'create-recipe-file',
       'Create Recipe File',
       'PUT',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').item.json.filePath }}",
-      "={{ $('Build Recipe Markdown').item.json.githubFileBody }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').first().json.filePath }}",
+      "={{ $('Build Recipe Markdown').first().json.githubFileBody }}",
       [360, 0]
     ),
     httpNode(
       'get-credits-file',
       'Get Credits File',
       'GET',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/CREDITS.md?ref={{ encodeURIComponent($('Build Recipe Markdown').item.json.branchName) }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/CREDITS.md?ref={{ encodeURIComponent($('Build Recipe Markdown').first().json.branchName) }}",
       null,
       [620, 0]
     ),
@@ -234,16 +234,16 @@ const workflow = {
       'update-credits-file',
       'Update Credits File',
       'PUT',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').item.json.credits.path }}",
-      "={{ $('Build Credits Update').item.json.githubCreditsFileBody }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').first().json.credits.path }}",
+      "={{ $('Build Credits Update').first().json.githubCreditsFileBody }}",
       [1140, 0]
     ),
     httpNode(
       'create-pr',
       'Create Pull Request',
       'POST',
-      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.targetOwner }}/{{ $('Build Recipe Markdown').item.json.github.targetRepo }}/pulls",
-      "={{ $('Build Recipe Markdown').item.json.pullRequestBody }}",
+      "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.targetOwner }}/{{ $('Build Recipe Markdown').first().json.github.targetRepo }}/pulls",
+      "={{ $('Build Recipe Markdown').first().json.pullRequestBody }}",
       [1400, 0]
     )
   ],

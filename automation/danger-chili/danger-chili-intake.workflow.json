@@ -130,7 +130,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/git/ref/heads/{{ $('Build Recipe Markdown').item.json.github.baseBranch }}",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/git/ref/heads/{{ $('Build Recipe Markdown').first().json.github.baseBranch }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -166,7 +166,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/git/refs",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/git/refs",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -191,7 +191,7 @@
         "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ { ref: 'refs/heads/' + $('Build Recipe Markdown').item.json.branchName, sha: $json.object.sha } }}"
+        "jsonBody": "={{ { ref: 'refs/heads/' + $('Build Recipe Markdown').first().json.branchName, sha: $json.object.sha } }}"
       },
       "id": "create-branch",
       "name": "Create Branch",
@@ -205,7 +205,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').item.json.filePath }}",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').first().json.filePath }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -230,7 +230,7 @@
         "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $('Build Recipe Markdown').item.json.githubFileBody }}"
+        "jsonBody": "={{ $('Build Recipe Markdown').first().json.githubFileBody }}"
       },
       "id": "create-recipe-file",
       "name": "Create Recipe File",
@@ -244,7 +244,7 @@
     {
       "parameters": {
         "method": "GET",
-        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/CREDITS.md?ref={{ encodeURIComponent($('Build Recipe Markdown').item.json.branchName) }}",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/CREDITS.md?ref={{ encodeURIComponent($('Build Recipe Markdown').first().json.branchName) }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -280,7 +280,7 @@
     {
       "parameters": {
         "mode": "runOnceForAllItems",
-        "jsCode": "'use strict';\n\nfunction decodeBase64(value) {\n  const compact = String(value || '').replace(/\\s/g, '');\n\n  if (typeof Buffer !== 'undefined') {\n    return Buffer.from(compact, 'base64').toString('utf8');\n  }\n\n  return decodeURIComponent(escape(atob(compact)));\n}\n\nfunction encodeBase64(value) {\n  if (typeof Buffer !== 'undefined') {\n    return Buffer.from(value, 'utf8').toString('base64');\n  }\n\n  return btoa(unescape(encodeURIComponent(value)));\n}\n\nfunction normalizeForCompare(value) {\n  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');\n}\n\nfunction appendCreditsEntry(markdown, entry) {\n  const normalizedMarkdown = normalizeForCompare(markdown);\n  const normalizedEntry = normalizeForCompare(entry);\n\n  if (normalizedEntry && normalizedMarkdown.includes(normalizedEntry)) {\n    return { markdown, added: false };\n  }\n\n  const trimmed = markdown.replace(/\\s+$/g, '');\n  return {\n    markdown: `${trimmed}\\n${entry}\\n`,\n    added: true\n  };\n}\n\nconst creditsFile = $input.first().json;\nconst recipe = $('Build Recipe Markdown').item.json;\n\nif (!creditsFile || !creditsFile.content || !creditsFile.sha) {\n  throw new Error('CREDITS.md content and sha are required to update credits.');\n}\n\nif (!recipe.credits || !recipe.credits.entry) {\n  throw new Error('Recipe credits entry is missing.');\n}\n\nconst currentMarkdown = decodeBase64(creditsFile.content);\nconst update = appendCreditsEntry(currentMarkdown, recipe.credits.entry);\n\nreturn [{\n  json: {\n    creditsPath: recipe.credits.path,\n    creditsEntry: recipe.credits.entry,\n    creditsEntryAdded: update.added,\n    githubCreditsFileBody: {\n      message: recipe.creditsCommitMessage,\n      content: encodeBase64(update.markdown),\n      branch: recipe.branchName,\n      sha: creditsFile.sha\n    }\n  }\n}];\n"
+        "jsCode": "'use strict';\n\nfunction decodeBase64(value) {\n  const compact = String(value || '').replace(/\\s/g, '');\n\n  if (typeof Buffer !== 'undefined') {\n    return Buffer.from(compact, 'base64').toString('utf8');\n  }\n\n  return decodeURIComponent(escape(atob(compact)));\n}\n\nfunction encodeBase64(value) {\n  if (typeof Buffer !== 'undefined') {\n    return Buffer.from(value, 'utf8').toString('base64');\n  }\n\n  return btoa(unescape(encodeURIComponent(value)));\n}\n\nfunction normalizeForCompare(value) {\n  return String(value || '').toLowerCase().replace(/[^a-z0-9]+/g, '');\n}\n\nfunction appendCreditsEntry(markdown, entry) {\n  const normalizedMarkdown = normalizeForCompare(markdown);\n  const normalizedEntry = normalizeForCompare(entry);\n\n  if (normalizedEntry && normalizedMarkdown.includes(normalizedEntry)) {\n    return { markdown, added: false };\n  }\n\n  const trimmed = markdown.replace(/\\s+$/g, '');\n  return {\n    markdown: `${trimmed}\\n${entry}\\n`,\n    added: true\n  };\n}\n\nconst creditsFile = $input.first().json;\nconst recipe = $('Build Recipe Markdown').first().json;\n\nif (!creditsFile || !creditsFile.content || !creditsFile.sha) {\n  throw new Error('CREDITS.md content and sha are required to update credits.');\n}\n\nif (!recipe.credits || !recipe.credits.entry) {\n  throw new Error('Recipe credits entry is missing.');\n}\n\nconst currentMarkdown = decodeBase64(creditsFile.content);\nconst update = appendCreditsEntry(currentMarkdown, recipe.credits.entry);\n\nreturn [{\n  json: {\n    creditsPath: recipe.credits.path,\n    creditsEntry: recipe.credits.entry,\n    creditsEntryAdded: update.added,\n    githubCreditsFileBody: {\n      message: recipe.creditsCommitMessage,\n      content: encodeBase64(update.markdown),\n      branch: recipe.branchName,\n      sha: creditsFile.sha\n    }\n  }\n}];\n"
       },
       "id": "build-credits-update",
       "name": "Build Credits Update",
@@ -294,7 +294,7 @@
     {
       "parameters": {
         "method": "PUT",
-        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.sourceOwner }}/{{ $('Build Recipe Markdown').item.json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').item.json.credits.path }}",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.sourceOwner }}/{{ $('Build Recipe Markdown').first().json.github.sourceRepo }}/contents/{{ $('Build Recipe Markdown').first().json.credits.path }}",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -319,7 +319,7 @@
         "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $('Build Credits Update').item.json.githubCreditsFileBody }}"
+        "jsonBody": "={{ $('Build Credits Update').first().json.githubCreditsFileBody }}"
       },
       "id": "update-credits-file",
       "name": "Update Credits File",
@@ -333,7 +333,7 @@
     {
       "parameters": {
         "method": "POST",
-        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').item.json.github.targetOwner }}/{{ $('Build Recipe Markdown').item.json.github.targetRepo }}/pulls",
+        "url": "=https://api.github.com/repos/{{ $('Build Recipe Markdown').first().json.github.targetOwner }}/{{ $('Build Recipe Markdown').first().json.github.targetRepo }}/pulls",
         "sendHeaders": true,
         "headerParameters": {
           "parameters": [
@@ -358,7 +358,7 @@
         "options": {},
         "sendBody": true,
         "specifyBody": "json",
-        "jsonBody": "={{ $('Build Recipe Markdown').item.json.pullRequestBody }}"
+        "jsonBody": "={{ $('Build Recipe Markdown').first().json.pullRequestBody }}"
       },
       "id": "create-pr",
       "name": "Create Pull Request",
